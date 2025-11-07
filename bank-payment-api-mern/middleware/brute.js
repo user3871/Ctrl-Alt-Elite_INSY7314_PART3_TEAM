@@ -25,7 +25,11 @@ const bruteForceSchema = new mongoose.Schema({
   expires: { type: Date, index: { expires: '1d' } }
 });
 
-const BruteForceModel = mongoose.model('BruteForce', bruteForceSchema);
+// Avoid OverwriteModelError in test/require cycles
+const BruteForceModel =
+  mongoose.models && mongoose.models.BruteForce
+    ? mongoose.models.BruteForce
+    : mongoose.model('BruteForce', bruteForceSchema);
 
 // Create MongoDB store for persistence
 const store = new MongooseStore(BruteForceModel);
@@ -42,7 +46,7 @@ export const loginBruteForce = new ExpressBrute(store, {
   maxWait: 60 * 60 * 1000,           // 1 hour maximum wait
   lifetime: 24 * 60 * 60,            // Track attempts for 24 hours
 
-  failCallback: function(req, res, next, nextValidRequestDate) {
+  failCallback: function (req, res, next, nextValidRequestDate) {
     const waitTime = Math.ceil((nextValidRequestDate - Date.now()) / 1000 / 60);
 
     res.status(429).json({
@@ -52,7 +56,7 @@ export const loginBruteForce = new ExpressBrute(store, {
     });
   },
 
-  handleStoreError: function(error) {
+  handleStoreError: function (error) {
     console.error('Express-brute store error:', error);
 
     // Fail open in case of database issues (security vs availability tradeoff)
@@ -79,7 +83,7 @@ export const globalBruteForce = new ExpressBrute(store, {
   maxWait: 15 * 60 * 1000,           // 15 minutes maximum wait
   lifetime: 60 * 60,                 // Track attempts for 1 hour
 
-  failCallback: function(req, res, next, nextValidRequestDate) {
+  failCallback: function (req, res, next, nextValidRequestDate) {
     res.status(429).json({
       success: false,
       message: 'Too many requests from this IP. Please slow down.'
@@ -98,7 +102,7 @@ export const registrationBruteForce = new ExpressBrute(store, {
   maxWait: 2 * 60 * 60 * 1000,       // 2 hours maximum wait
   lifetime: 24 * 60 * 60,            // Track for 24 hours
 
-  failCallback: function(req, res, next, nextValidRequestDate) {
+  failCallback: function (req, res, next, nextValidRequestDate) {
     const waitTime = Math.ceil((nextValidRequestDate - Date.now()) / 1000 / 60);
 
     res.status(429).json({
@@ -118,7 +122,7 @@ export const paymentBruteForce = new ExpressBrute(store, {
   maxWait: 30 * 60 * 1000,           // 30 minutes maximum
   lifetime: 60 * 60,                 // 1 hour window
 
-  failCallback: function(req, res, next, nextValidRequestDate) {
+  failCallback: function (req, res, next, nextValidRequestDate) {
     res.status(429).json({
       success: false,
       message: 'Payment creation rate limit exceeded. Please wait before creating another payment.'

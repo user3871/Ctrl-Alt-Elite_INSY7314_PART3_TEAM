@@ -31,7 +31,8 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: bank-payment-api-mern
-        run: npm ci
+        run: npm install
+
 
       - name: Install frontend dependencies
         working-directory: bank-payment-frontend
